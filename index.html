@@ -17,8 +17,8 @@ body {
   height: 100vh;
 }
 .slide {
-  width: 1280px;
-  height: 720px;
+  width: 1800px;
+  height: 1000px;
   position: relative;
   background: #ffffff;
   overflow: hidden;
@@ -41,7 +41,7 @@ body {
   gap: 12px;
 }
 button {
-  font-size: 18px;
+  font-size: 36px;
   padding: 10px 20px;
   border: 1px solid #999;
   background: #ffffff;
@@ -68,8 +68,8 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-const slideWidth = 1280;
-const slideHeight = 720;
+const slideWidth = 1800;
+const slideHeight = 1000;
 const centerX = slideWidth / 2;
 const centerY = slideHeight / 2;
 
@@ -81,12 +81,12 @@ let running = false;
 let stepIndex = 0;
 
 const originalRandomDots = [
-  { x: 250, y: 170, size: 18, color: "#000000" },
-  { x: 560, y: 155, size: 18, color: "#000000" },
-  { x: 950, y: 210, size: 18, color: "#000000" },
-  { x: 360, y: 420, size: 18, color: "#000000" },
-  { x: 760, y: 500, size: 18, color: "#000000" },
-  { x: 1030, y: 355, size: 18, color: "#000000" }
+  { x: 250, y: 170, size: 36, color: "#000000" },
+  { x: 560, y: 155, size: 36, color: "#000000" },
+  { x: 950, y: 210, size: 36, color: "#000000" },
+  { x: 360, y: 420, size: 36, color: "#000000" },
+  { x: 760, y: 500, size: 36, color: "#000000" },
+  { x: 1030, y: 355, size: 36, color: "#000000" }
 ];
 
 const randomColorPool = [
@@ -95,7 +95,7 @@ const randomColorPool = [
   "#8E7CC3", "#93C47D", "#F6B26B", "#76A5AF"
 ];
 
-const randomSizePool = [14, 18, 22, 28, 36, 48, 62, 78, 96, 118];
+const randomSizePool = [28, 36, 44, 56, 72, 96, 124, 156, 192, 236];
 
 const dots = [];
 for (let i = 0; i < 6; i++) {
@@ -122,15 +122,61 @@ function shuffled(array) {
   return copy;
 }
 
-function getMixedRandomDots() {
+function getMixedRandomDotsNoOverlap() {
   const sizes = shuffled(randomSizePool).slice(0, 6);
   const colors = shuffled(randomColorPool).slice(0, 6);
-  return originalRandomDots.map((d, i) => ({
-    x: d.x,
-    y: d.y,
-    size: sizes[i],
-    color: colors[i]
-  }));
+  const placed = [];
+  const result = [];
+  const margin = 120;
+
+  for (let i = 0; i < 6; i++) {
+    const size = sizes[i];
+    const radius = size / 2;
+    let attempts = 0;
+    let x, y, ok;
+
+    do {
+      attempts++;
+      x = margin + radius + Math.random() * (slideWidth - 2 * (margin + radius));
+      y = margin + radius + Math.random() * (slideHeight - 2 * (margin + radius));
+      ok = true;
+
+      for (const p of placed) {
+        const dx = x - p.x;
+        const dy = y - p.y;
+        const minDist = radius + p.radius + 28;
+        if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+          ok = false;
+          break;
+        }
+      }
+    } while (!ok && attempts < 6000);
+
+    if (!ok) {
+      // deterministic fallback positions with wide spacing
+      const fallback = [
+        { x: slideWidth * 0.18, y: slideHeight * 0.22 },
+        { x: slideWidth * 0.42, y: slideHeight * 0.18 },
+        { x: slideWidth * 0.74, y: slideHeight * 0.26 },
+        { x: slideWidth * 0.26, y: slideHeight * 0.62 },
+        { x: slideWidth * 0.56, y: slideHeight * 0.72 },
+        { x: slideWidth * 0.82, y: slideHeight * 0.50 }
+      ][i];
+      x = fallback.x;
+      y = fallback.y;
+    }
+
+    placed.push({ x, y, radius });
+
+    result.push({
+      x,
+      y,
+      size,
+      color: colors[i]
+    });
+  }
+
+  return result;
 }
 
 function centerPositions(positions) {
@@ -164,8 +210,8 @@ function applyRandomStyles(positions) {
 }
 
 function getLineGroupPositions(groups, size, colors) {
-  const within = size * 1.3;
-  const between = size * 3.0;
+  const within = size * 0.65;
+  const between = size * 1.5;
   let totalWidth = 0;
 
   groups.forEach((g, i) => {
@@ -254,7 +300,52 @@ function getColumnsOfThreePositions(size, colors) {
   ]);
 }
 
+function enforceNoOverlap(positions) {
+  const adjusted = positions.map(p => ({ ...p }));
+  for (let pass = 0; pass < 12; pass++) {
+    let moved = false;
+    for (let i = 0; i < adjusted.length; i++) {
+      for (let j = i + 1; j < adjusted.length; j++) {
+        const a = adjusted[i];
+        const b = adjusted[j];
+        const ra = a.size / 2;
+        const rb = b.size / 2;
+        const minDist = ra + rb + 8;
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDist) {
+          moved = true;
+          if (dist === 0) {
+            dx = 1;
+            dy = 0;
+            dist = 1;
+          }
+          const overlap = (minDist - dist) / 2;
+          const ux = dx / dist;
+          const uy = dy / dist;
+
+          a.x -= ux * overlap;
+          a.y -= uy * overlap;
+          b.x += ux * overlap;
+          b.y += uy * overlap;
+
+          const margin = Math.max(20, Math.max(ra, rb));
+          a.x = Math.min(slideWidth - margin, Math.max(margin, a.x));
+          a.y = Math.min(slideHeight - margin, Math.max(margin, a.y));
+          b.x = Math.min(slideWidth - margin, Math.max(margin, b.x));
+          b.y = Math.min(slideHeight - margin, Math.max(margin, b.y));
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  return adjusted;
+}
+
 function applyPositions(positions) {
+  positions = enforceNoOverlap(positions);
   positions.forEach((d, i) => {
     dots[i].style.left = d.x + "px";
     dots[i].style.top = d.y + "px";
@@ -295,16 +386,15 @@ function createRound(size, colors, endMixedRandom, randomizeArrangementStyles) {
     round.push(makeStep(arr, normalStepDuration));
   });
 
-  round.push(makeStep(endMixedRandom ? getMixedRandomDots() : getOriginalRandomDots(), normalStepDuration));
+  round.push(makeStep(endMixedRandom ? getMixedRandomDotsNoOverlap() : getOriginalRandomDots(), normalStepDuration));
   return round;
 }
 
 const sequence = [
-  ...createRound(40, ["#000000", "#000000"], false, false),
-  ...createRound(70, ["#000000", "#000000"], false, false),
-  ...createRound(70, ["#2E75B6", "#C00000"], false, false),
-  ...createRound(54, ["#000000", "#000000"], true, false),
-  ...createRound(54, ["#000000", "#000000"], true, true)
+  ...createRound(80, ["#000000", "#000000"], false, false),
+  ...createRound(140, ["#000000", "#000000"], false, false),
+  ...createRound(140, ["#2E75B6", "#C00000"], false, false),
+  ...createRound(108, ["#000000", "#000000"], true, true)
 ];
 
 function queueNext() {
