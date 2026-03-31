@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Centered Dot Grouping Animation</title>
+<title>Dot Grouping Animation Large</title>
 <style>
 body {
   margin: 0;
@@ -15,17 +15,17 @@ body {
   font-family: Arial, sans-serif;
 }
 #stage {
-  width: 600px;
-  height: 300px;
+  width: 1200px;
+  height: 600px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
   position: relative;
   overflow: hidden;
 }
 .dot {
-  width: 18px;
-  height: 18px;
+  width: 36px;
+  height: 36px;
   background: black;
   border-radius: 50%;
   position: absolute;
@@ -40,9 +40,9 @@ body {
 <script>
 const stage = document.getElementById("stage");
 const dots = [];
-const DOT_SIZE = 18;
-const STAGE_W = 600;
-const STAGE_H = 300;
+const DOT_SIZE = 36;
+const STAGE_W = 1200;
+const STAGE_H = 600;
 
 for (let i = 0; i < 6; i++) {
   const d = document.createElement("div");
@@ -60,12 +60,10 @@ function setDots(positions) {
 
 function generateRandomLayout() {
   const positions = [];
-  const minDistance = 42;
-  const padding = 55;
-  let attempts = 0;
+  const minDistance = 80;
+  const padding = 100;
 
-  while (positions.length < 6 && attempts < 5000) {
-    attempts++;
+  while (positions.length < 6) {
     const x = Math.floor(Math.random() * (STAGE_W - 2 * padding - DOT_SIZE)) + padding;
     const y = Math.floor(Math.random() * (STAGE_H - 2 * padding - DOT_SIZE)) + padding;
 
@@ -86,55 +84,55 @@ function generateRandomLayout() {
 
 const randomLayout = generateRandomLayout();
 
+// scaled positions (x2 from previous centered ~600x300)
 const layouts = [
   randomLayout,
 
-  // 3 + 3 line centered
+  // 3 + 3 line
   [
-    {x:210,y:141},{x:240,y:141},{x:270,y:141},
-    {x:330,y:141},{x:360,y:141},{x:390,y:141}
+    {x:420,y:282},{x:480,y:282},{x:540,y:282},
+    {x:660,y:282},{x:720,y:282},{x:780,y:282}
   ],
 
-  // 5 + 1 line centered
+  // 5 + 1
   [
-    {x:195,y:141},{x:225,y:141},{x:255,y:141},{x:285,y:141},{x:315,y:141},
-    {x:375,y:141}
+    {x:390,y:282},{x:450,y:282},{x:510,y:282},{x:570,y:282},{x:630,y:282},
+    {x:750,y:282}
   ],
 
-  // 4 + 2 line centered
+  // 4 + 2
   [
-    {x:210,y:141},{x:240,y:141},{x:270,y:141},{x:300,y:141},
-    {x:345,y:141},{x:375,y:141}
+    {x:420,y:282},{x:480,y:282},{x:540,y:282},{x:600,y:282},
+    {x:690,y:282},{x:750,y:282}
   ],
 
-  // stacked 3 + 3 centered
+  // stacked 3 + 3
   [
-    {x:255,y:101},{x:285,y:101},{x:315,y:101},
-    {x:255,y:181},{x:285,y:181},{x:315,y:181}
+    {x:510,y:202},{x:570,y:202},{x:630,y:202},
+    {x:510,y:362},{x:570,y:362},{x:630,y:362}
   ],
 
-  // two separate triangles of 3 centered
+  // triangles
   [
-    {x:210,y:161},{x:240,y:111},{x:270,y:161},
-    {x:330,y:161},{x:360,y:111},{x:390,y:161}
+    {x:420,y:322},{x:480,y:222},{x:540,y:322},
+    {x:660,y:322},{x:720,y:222},{x:780,y:322}
   ],
 
-  // 5 as square + 1 centered
+  // 5 square +1
   [
-    {x:240,y:111},{x:270,y:111},{x:240,y:141},{x:270,y:141},
-    {x:255,y:171},
-    {x:345,y:141}
+    {x:480,y:222},{x:540,y:222},{x:480,y:282},{x:540,y:282},
+    {x:510,y:342},
+    {x:690,y:282}
   ],
 
-  // 4 as square + 2 centered
+  // 4 square +2
   [
-    {x:240,y:111},{x:270,y:111},{x:240,y:141},{x:270,y:141},
-    {x:345,y:126},{x:375,y:156}
+    {x:480,y:222},{x:540,y:222},{x:480,y:282},{x:540,y:282},
+    {x:690,y:252},{x:750,y:312}
   ]
 ];
 
 let step = 0;
-let firstRun = true;
 
 function animate() {
   setDots(layouts[step]);
@@ -146,8 +144,9 @@ setDots(randomLayout);
 setTimeout(() => {
   step = 1;
   animate();
-  setInterval(animate, 2200);
-}, 1200);
+  setInterval(animate, 2400);
+}, 1400);
+
 </script>
 
 </body>
