@@ -17,8 +17,8 @@ body {
   height: 100vh;
 }
 .slide {
-  width: 1800px;
-  height: 1000px;
+  width: 1500px;
+  height: 820px;
   position: relative;
   background: #ffffff;
   overflow: hidden;
@@ -68,8 +68,8 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-const slideWidth = 1800;
-const slideHeight = 1000;
+const slideWidth = 1500;
+const slideHeight = 820;
 const centerX = slideWidth / 2;
 const centerY = slideHeight / 2;
 
@@ -397,9 +397,16 @@ const sequence = [
   ...createRound(108, ["#000000", "#000000"], true, true)
 ];
 
+
+function randomBackground(){
+ const colors=["#ffffff","#f2f2f2","#e8f0fe","#fff3cd","#e6ffe6","#fce4ec","#e0f7fa"];
+ slide.style.background=colors[Math.floor(Math.random()*colors.length)];
+}
+
 function queueNext() {
   if (!running) return;
   const current = sequence[stepIndex];
+  randomBackground();
   applyPositions(current.positions);
   stepIndex = (stepIndex + 1) % sequence.length;
   timer = setTimeout(queueNext, current.duration);
