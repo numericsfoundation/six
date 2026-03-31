@@ -3,13 +3,53 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Groupitizing Six</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groupitizing Six Controls</title>
 <style>
-body {margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial;}
-.slide {width:1280px;height:720px;position:relative;border:1px solid #ccc;}
-.dot {position:absolute;border-radius:50%;transform:translate(-50%,-50%);transition:all 1.4s ease-in-out;}
-.controls {margin-top:15px;}
-button {font-size:18px;padding:10px 20px;margin:0 10px;}
+body {
+  margin: 0;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+.slide {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+}
+.dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    left 1.25s ease-in-out,
+    top 1.25s ease-in-out,
+    width 1.0s ease-in-out,
+    height 1.0s ease-in-out,
+    background-color 1.0s ease-in-out;
+}
+.controls {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+button {
+  font-size: 18px;
+  padding: 10px 20px;
+  border: 1px solid #999;
+  background: #ffffff;
+  cursor: pointer;
+}
+button:hover {
+  background: #f3f3f3;
+}
 </style>
 </head>
 <body>
@@ -17,98 +57,287 @@ button {font-size:18px;padding:10px 20px;margin:0 10px;}
 <div class="slide" id="slide"></div>
 
 <div class="controls">
-<button onclick="start()">Start</button>
-<button onclick="pause()">Pause</button>
+  <button id="startBtn">Start</button>
+  <button id="pauseBtn">Pause</button>
+  <button id="resetBtn">Reset</button>
 </div>
 
 <script>
-const slide=document.getElementById("slide");
-const cx=640, cy=360;
+const slide = document.getElementById("slide");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
 
-let timer=null;
+const slideWidth = 1280;
+const slideHeight = 720;
+const centerX = slideWidth / 2;
+const centerY = slideHeight / 2;
 
-const dots=[];
-for(let i=0;i<6;i++){
- let d=document.createElement("div");
- d.className="dot";
- slide.appendChild(d);
- dots.push(d);
-}
+const normalStepDuration = 2400;
+const roundStartDuration = 850;
 
-function randomSmall(){
- return dots.map(()=>({
-  x:100+Math.random()*1080,
-  y:100+Math.random()*520,
-  size:18,
-  color:"black"
- }));
-}
+let timer = null;
+let running = false;
+let stepIndex = 0;
 
-function line(groups,size){
- let within=size*1.3, between=size*3;
- let total=0;
- groups.forEach((g,i)=>{
-  total+=g*size+(g-1)*within;
-  if(i<groups.length-1) total+=between;
- });
- let x=(1280-total)/2+size/2;
- let pos=[];
- groups.forEach((g,gi)=>{
-  for(let i=0;i<g;i++){
-   pos.push({x:x,y:cy,size:size,color:"black"});
-   x+=size+within;
-  }
-  if(gi<groups.length-1) x+=between;
- });
- return pos;
-}
-
-function triangle(size){
- return [
-  {x:cx,y:cy-size*1.5,size:size,color:"black"},
-  {x:cx-size,y:cy,size:size,color:"black"},
-  {x:cx+size,y:cy,size:size,color:"black"},
-  {x:cx-size*1.5,y:cy+size*1.5,size:size,color:"black"},
-  {x:cx,y:cy+size*1.5,size:size,color:"black"},
-  {x:cx+size*1.5,y:cy+size*1.5,size:size,color:"black"}
- ];
-}
-
-function apply(p){
- p.forEach((d,i)=>{
-  dots[i].style.left=d.x+"px";
-  dots[i].style.top=d.y+"px";
-  dots[i].style.width=d.size+"px";
-  dots[i].style.height=d.size+"px";
-  dots[i].style.background=d.color;
- });
-}
-
-const steps=[
- ()=>randomSmall(),
- ()=>line([3,3],40),
- ()=>line([5,1],40),
- ()=>line([4,2],40),
- ()=>triangle(40)
+const originalRandomDots = [
+  { x: 250, y: 170, size: 18, color: "#000000" },
+  { x: 560, y: 155, size: 18, color: "#000000" },
+  { x: 950, y: 210, size: 18, color: "#000000" },
+  { x: 360, y: 420, size: 18, color: "#000000" },
+  { x: 760, y: 500, size: 18, color: "#000000" },
+  { x: 1030, y: 355, size: 18, color: "#000000" }
 ];
 
-let i=0;
+const randomColorPool = [
+  "#000000", "#2E75B6", "#C00000", "#6AA84F",
+  "#7F60A8", "#E69138", "#3C78D8", "#CC4125",
+  "#8E7CC3", "#93C47D", "#F6B26B", "#76A5AF"
+];
 
-function cycle(){
- apply(steps[i]());
- i=(i+1)%steps.length;
+const randomSizePool = [14, 18, 22, 28, 36, 48, 62, 78, 96, 118];
+
+const dots = [];
+for (let i = 0; i < 6; i++) {
+  const dot = document.createElement("div");
+  dot.className = "dot";
+  slide.appendChild(dot);
+  dots.push(dot);
 }
 
-function start(){
- if(timer) return;
- cycle();
- timer=setInterval(cycle,3000);
+function cloneDots(dotArray) {
+  return dotArray.map(d => ({ x: d.x, y: d.y, size: d.size, color: d.color }));
 }
 
-function pause(){
- clearInterval(timer);
- timer=null;
+function getOriginalRandomDots() {
+  return cloneDots(originalRandomDots);
 }
+
+function shuffled(array) {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getMixedRandomDots() {
+  const sizes = shuffled(randomSizePool).slice(0, 6);
+  const colors = shuffled(randomColorPool).slice(0, 6);
+  return originalRandomDots.map((d, i) => ({
+    x: d.x,
+    y: d.y,
+    size: sizes[i],
+    color: colors[i]
+  }));
+}
+
+function centerPositions(positions) {
+  const xs = positions.map(p => p.x);
+  const ys = positions.map(p => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const currentCenterX = (minX + maxX) / 2;
+  const currentCenterY = (minY + maxY) / 2;
+  const shiftX = centerX - currentCenterX;
+  const shiftY = centerY - currentCenterY;
+  return positions.map(p => ({
+    x: p.x + shiftX,
+    y: p.y + shiftY,
+    size: p.size,
+    color: p.color
+  }));
+}
+
+function applyRandomStyles(positions) {
+  const sizes = shuffled(randomSizePool).slice(0, 6);
+  const colors = shuffled(randomColorPool).slice(0, 6);
+  return positions.map((p, i) => ({
+    x: p.x,
+    y: p.y,
+    size: sizes[i],
+    color: colors[i]
+  }));
+}
+
+function getLineGroupPositions(groups, size, colors) {
+  const within = size * 1.3;
+  const between = size * 3.0;
+  let totalWidth = 0;
+
+  groups.forEach((g, i) => {
+    totalWidth += g * size + (g - 1) * within;
+    if (i < groups.length - 1) totalWidth += between;
+  });
+
+  let x = (slideWidth - totalWidth) / 2 + size / 2;
+  const positions = [];
+
+  groups.forEach((g, gi) => {
+    for (let i = 0; i < g; i++) {
+      positions.push({
+        x: x,
+        y: centerY,
+        size: size,
+        color: colors[gi] || colors[0]
+      });
+      x += size + within;
+    }
+    if (gi < groups.length - 1) x += between;
+  });
+
+  return centerPositions(positions);
+}
+
+function getTrianglePositions(size, colors) {
+  const dx = size * 1.1;
+  const dy = size * 1.45;
+  return centerPositions([
+    { x: centerX, y: centerY - dy, size: size, color: colors[0] },
+    { x: centerX - dx, y: centerY, size: size, color: colors[0] },
+    { x: centerX + dx, y: centerY, size: size, color: colors[0] },
+    { x: centerX - dx * 1.45, y: centerY + dy, size: size, color: colors[1] || colors[0] },
+    { x: centerX, y: centerY + dy, size: size, color: colors[1] || colors[0] },
+    { x: centerX + dx * 1.45, y: centerY + dy, size: size, color: colors[1] || colors[0] }
+  ]);
+}
+
+function getTwoTrianglesPositions(size, colors) {
+  const leftCenterX = centerX - size * 2.8;
+  const rightCenterX = centerX + size * 2.8;
+  const dy = size * 1.25;
+  const dx = size * 0.95;
+
+  return centerPositions([
+    { x: leftCenterX, y: centerY - dy, size: size, color: colors[0] },
+    { x: leftCenterX - dx, y: centerY + dy * 0.55, size: size, color: colors[0] },
+    { x: leftCenterX + dx, y: centerY + dy * 0.55, size: size, color: colors[0] },
+    { x: rightCenterX, y: centerY - dy, size: size, color: colors[1] || colors[0] },
+    { x: rightCenterX - dx, y: centerY + dy * 0.55, size: size, color: colors[1] || colors[0] },
+    { x: rightCenterX + dx, y: centerY + dy * 0.55, size: size, color: colors[1] || colors[0] }
+  ]);
+}
+
+function getSquarePlusTwoPositions(size, colors) {
+  const gap = size * 1.15;
+  const left = centerX - size * 2.1;
+  const top = centerY - gap * 0.7;
+  const bottom = centerY + gap * 0.7;
+  const rightCol = left + gap * 3.0;
+
+  return centerPositions([
+    { x: left, y: top, size: size, color: colors[0] },
+    { x: left + gap, y: top, size: size, color: colors[0] },
+    { x: left, y: bottom, size: size, color: colors[0] },
+    { x: left + gap, y: bottom, size: size, color: colors[0] },
+    { x: rightCol, y: top, size: size, color: colors[1] || colors[0] },
+    { x: rightCol, y: bottom, size: size, color: colors[1] || colors[0] }
+  ]);
+}
+
+function getColumnsOfThreePositions(size, colors) {
+  const gapX = size * 2.6;
+  const gapY = size * 1.45;
+  const left = centerX - gapX / 2;
+  const right = centerX + gapX / 2;
+
+  return centerPositions([
+    { x: left, y: centerY - gapY, size: size, color: colors[0] },
+    { x: left, y: centerY, size: size, color: colors[0] },
+    { x: left, y: centerY + gapY, size: size, color: colors[0] },
+    { x: right, y: centerY - gapY, size: size, color: colors[1] || colors[0] },
+    { x: right, y: centerY, size: size, color: colors[1] || colors[0] },
+    { x: right, y: centerY + gapY, size: size, color: colors[1] || colors[0] }
+  ]);
+}
+
+function applyPositions(positions) {
+  positions.forEach((d, i) => {
+    dots[i].style.left = d.x + "px";
+    dots[i].style.top = d.y + "px";
+    dots[i].style.width = d.size + "px";
+    dots[i].style.height = d.size + "px";
+    dots[i].style.backgroundColor = d.color;
+  });
+}
+
+function makeStep(positions, duration) {
+  return { positions, duration };
+}
+
+function getArrangementList(size, colors, randomizeStyle) {
+  const list = [
+    getLineGroupPositions([3, 3], size, colors),
+    getLineGroupPositions([5, 1], size, colors),
+    getLineGroupPositions([4, 2], size, colors),
+    getTrianglePositions(size, colors),
+    getTwoTrianglesPositions(size, colors),
+    getSquarePlusTwoPositions(size, colors),
+    getColumnsOfThreePositions(size, colors)
+  ];
+
+  const ordered = shuffled(list);
+  if (randomizeStyle) {
+    return ordered.map(p => applyRandomStyles(p));
+  }
+  return ordered;
+}
+
+function createRound(size, colors, endMixedRandom, randomizeArrangementStyles) {
+  const round = [];
+  round.push(makeStep(getOriginalRandomDots(), roundStartDuration));
+
+  const arrangements = getArrangementList(size, colors, randomizeArrangementStyles);
+  arrangements.forEach(arr => {
+    round.push(makeStep(arr, normalStepDuration));
+  });
+
+  round.push(makeStep(endMixedRandom ? getMixedRandomDots() : getOriginalRandomDots(), normalStepDuration));
+  return round;
+}
+
+const sequence = [
+  ...createRound(40, ["#000000", "#000000"], false, false),
+  ...createRound(70, ["#000000", "#000000"], false, false),
+  ...createRound(70, ["#2E75B6", "#C00000"], false, false),
+  ...createRound(54, ["#000000", "#000000"], true, false),
+  ...createRound(54, ["#000000", "#000000"], true, true)
+];
+
+function queueNext() {
+  if (!running) return;
+  const current = sequence[stepIndex];
+  applyPositions(current.positions);
+  stepIndex = (stepIndex + 1) % sequence.length;
+  timer = setTimeout(queueNext, current.duration);
+}
+
+function startAnimation() {
+  if (running) return;
+  running = true;
+  queueNext();
+}
+
+function pauseAnimation() {
+  running = false;
+  clearTimeout(timer);
+  timer = null;
+}
+
+function resetAnimation() {
+  pauseAnimation();
+  stepIndex = 0;
+  applyPositions(getOriginalRandomDots());
+}
+
+startBtn.addEventListener("click", startAnimation);
+pauseBtn.addEventListener("click", pauseAnimation);
+resetBtn.addEventListener("click", resetAnimation);
+
+resetAnimation();
 </script>
 
 </body>
