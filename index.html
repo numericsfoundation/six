@@ -3,151 +3,178 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dot Grouping Animation Large</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groupitizing Six Final</title>
 <style>
-body {
-  margin: 0;
-  background: #f4f4f4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-family: Arial, sans-serif;
-}
-#stage {
-  width: 1200px;
-  height: 600px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-  position: relative;
-  overflow: hidden;
-}
+body { margin:0; background:white; display:flex; justify-content:center; align-items:center; height:100vh;}
+.slide { width:1200px; height:675px; position:relative;}
 .dot {
-  width: 36px;
-  height: 36px;
-  background: black;
-  border-radius: 50%;
-  position: absolute;
-  transition: left 1s ease, top 1s ease;
+  position:absolute;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  transition: all 1.5s ease-in-out;
 }
 </style>
 </head>
 <body>
-
-<div id="stage"></div>
+<div class="slide" id="slide"></div>
 
 <script>
-const stage = document.getElementById("stage");
-const dots = [];
-const DOT_SIZE = 36;
-const STAGE_W = 1200;
-const STAGE_H = 600;
+const slide = document.getElementById("slide");
+const centerX = 600;
+const centerY = 337;
 
-for (let i = 0; i < 6; i++) {
+const dots = [];
+for(let i=0;i<6;i++){
   const d = document.createElement("div");
   d.className = "dot";
-  stage.appendChild(d);
+  slide.appendChild(d);
   dots.push(d);
 }
 
-function setDots(positions) {
-  positions.forEach((p, i) => {
-    dots[i].style.left = p.x + "px";
-    dots[i].style.top = p.y + "px";
+const arrangements = [
+  {type:"lineGroups", groups:[3,3]},
+  {type:"lineGroups", groups:[5,1]},
+  {type:"lineGroups", groups:[4,2]},
+  {type:"triangle"},
+  {type:"twoTriangles"},
+  {type:"squarePlusTwo"},
+  {type:"columns"}
+];
+
+const passes = [
+  {size:40, colors:["black","black"], random:false},
+  {size:70, colors:["black","black"], random:false},
+  {size:70, colors:["#2E75B6","#C00000"], random:false},
+  {size:55, colors:["black","black"], random:true}
+];
+
+function randomPositions(size){
+  return dots.map(()=>({
+    x:100 + Math.random()*1000,
+    y:100 + Math.random()*475,
+    size:size*(0.7 + Math.random()*0.8),
+    color:["#000","#2E75B6","#C00000","#6AA84F"][Math.floor(Math.random()*4)]
+  }));
+}
+
+function line(groups, pass){
+  const size = pass.size;
+  const within = size*1.3;
+  const between = size*3;
+
+  let total=0;
+  groups.forEach((g,i)=>{
+    total+=g*size+(g-1)*within;
+    if(i<groups.length-1) total+=between;
+  });
+
+  let x=(1200-total)/2 + size/2;
+  let pos=[];
+  groups.forEach((g,gi)=>{
+    for(let i=0;i<g;i++){
+      pos.push({x:x,y:centerY,size:size,color:pass.colors[gi]||pass.colors[0]});
+      x+=size+within;
+    }
+    if(gi<groups.length-1) x+=between;
+  });
+  return pos;
+}
+
+function triangle(pass){
+  const s=pass.size;
+  return [
+    {x:centerX,y:centerY-s*1.6,size:s,color:pass.colors[0]},
+    {x:centerX-s,y:centerY,size:s,color:pass.colors[0]},
+    {x:centerX+s,y:centerY,size:s,color:pass.colors[0]},
+    {x:centerX-s*1.6,y:centerY+s*1.6,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX,y:centerY+s*1.6,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+s*1.6,y:centerY+s*1.6,size:s,color:pass.colors[1]||pass.colors[0]}
+  ];
+}
+
+function twoTriangles(pass){
+  const s=pass.size;
+  return [
+    {x:centerX-200,y:centerY-100,size:s,color:pass.colors[0]},
+    {x:centerX-260,y:centerY+50,size:s,color:pass.colors[0]},
+    {x:centerX-140,y:centerY+50,size:s,color:pass.colors[0]},
+    {x:centerX+200,y:centerY-100,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+140,y:centerY+50,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+260,y:centerY+50,size:s,color:pass.colors[1]||pass.colors[0]}
+  ];
+}
+
+function squarePlusTwo(pass){
+  const s=pass.size;
+  return [
+    {x:centerX-120,y:centerY-80,size:s,color:pass.colors[0]},
+    {x:centerX,y:centerY-80,size:s,color:pass.colors[0]},
+    {x:centerX-120,y:centerY+80,size:s,color:pass.colors[0]},
+    {x:centerX,y:centerY+80,size:s,color:pass.colors[0]},
+    {x:centerX+160,y:centerY-80,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+160,y:centerY+80,size:s,color:pass.colors[1]||pass.colors[0]}
+  ];
+}
+
+function columns(pass){
+  const s=pass.size;
+  return [
+    {x:centerX-120,y:centerY-120,size:s,color:pass.colors[0]},
+    {x:centerX-120,y:centerY,size:s,color:pass.colors[0]},
+    {x:centerX-120,y:centerY+120,size:s,color:pass.colors[0]},
+    {x:centerX+120,y:centerY-120,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+120,y:centerY,size:s,color:pass.colors[1]||pass.colors[0]},
+    {x:centerX+120,y:centerY+120,size:s,color:pass.colors[1]||pass.colors[0]}
+  ];
+}
+
+function getPositions(arr, pass){
+  if(pass.random) return randomPositions(pass.size);
+
+  if(arr.type==="lineGroups") return line(arr.groups, pass);
+  if(arr.type==="triangle") return triangle(pass);
+  if(arr.type==="twoTriangles") return twoTriangles(pass);
+  if(arr.type==="squarePlusTwo") return squarePlusTwo(pass);
+  if(arr.type==="columns") return columns(pass);
+
+  return [];
+}
+
+function apply(pos){
+  pos.forEach((p,i)=>{
+    dots[i].style.left=p.x+"px";
+    dots[i].style.top=p.y+"px";
+    dots[i].style.width=p.size+"px";
+    dots[i].style.height=p.size+"px";
+    dots[i].style.background=p.color;
   });
 }
 
-function generateRandomLayout() {
-  const positions = [];
-  const minDistance = 80;
-  const padding = 100;
+let a=0;
+let p=0;
+let state="random";
 
-  while (positions.length < 6) {
-    const x = Math.floor(Math.random() * (STAGE_W - 2 * padding - DOT_SIZE)) + padding;
-    const y = Math.floor(Math.random() * (STAGE_H - 2 * padding - DOT_SIZE)) + padding;
+function cycle(){
+  const pass = passes[p];
 
-    let ok = true;
-    for (const p of positions) {
-      const dx = x - p.x;
-      const dy = y - p.y;
-      if (Math.sqrt(dx * dx + dy * dy) < minDistance) {
-        ok = false;
-        break;
-      }
+  if(state==="random"){
+    apply(randomPositions(pass.size));
+    state="structured";
+  } else {
+    apply(getPositions(arrangements[a], pass));
+    a++;
+    if(a>=arrangements.length){
+      a=0;
+      p++;
+      if(p>=passes.length) p=0;
+      state="random";
     }
-    if (ok) positions.push({ x, y });
   }
-
-  return positions;
 }
 
-const randomLayout = generateRandomLayout();
-
-// scaled positions (x2 from previous centered ~600x300)
-const layouts = [
-  randomLayout,
-
-  // 3 + 3 line
-  [
-    {x:420,y:282},{x:480,y:282},{x:540,y:282},
-    {x:660,y:282},{x:720,y:282},{x:780,y:282}
-  ],
-
-  // 5 + 1
-  [
-    {x:390,y:282},{x:450,y:282},{x:510,y:282},{x:570,y:282},{x:630,y:282},
-    {x:750,y:282}
-  ],
-
-  // 4 + 2
-  [
-    {x:420,y:282},{x:480,y:282},{x:540,y:282},{x:600,y:282},
-    {x:690,y:282},{x:750,y:282}
-  ],
-
-  // stacked 3 + 3
-  [
-    {x:510,y:202},{x:570,y:202},{x:630,y:202},
-    {x:510,y:362},{x:570,y:362},{x:630,y:362}
-  ],
-
-  // triangles
-  [
-    {x:420,y:322},{x:480,y:222},{x:540,y:322},
-    {x:660,y:322},{x:720,y:222},{x:780,y:322}
-  ],
-
-  // 5 square +1
-  [
-    {x:480,y:222},{x:540,y:222},{x:480,y:282},{x:540,y:282},
-    {x:510,y:342},
-    {x:690,y:282}
-  ],
-
-  // 4 square +2
-  [
-    {x:480,y:222},{x:540,y:222},{x:480,y:282},{x:540,y:282},
-    {x:690,y:252},{x:750,y:312}
-  ]
-];
-
-let step = 0;
-
-function animate() {
-  setDots(layouts[step]);
-  step = (step + 1) % layouts.length;
-}
-
-setDots(randomLayout);
-
-setTimeout(() => {
-  step = 1;
-  animate();
-  setInterval(animate, 2400);
-}, 1400);
-
+cycle();
+setInterval(cycle, 3000);
 </script>
-
 </body>
 </html>
